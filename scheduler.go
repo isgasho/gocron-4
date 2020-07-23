@@ -32,12 +32,14 @@ func NewScheduler(loc *time.Location) *Scheduler {
 }
 
 // StartBlocking starts all the pending jobs using a second-long ticker and blocks the current thread
-func (s *Scheduler) StartBlocking() {
+func (s *Scheduler) StartBlocking(options ...interface{}) {
+	s.handleStartOptions(options...)
 	<-s.StartAsync()
 }
 
 // StartAsync starts a goroutine that runs all the pending using a second-long ticker
-func (s *Scheduler) StartAsync() chan struct{} {
+func (s *Scheduler) StartAsync(options ...interface{}) chan struct{} {
+	s.handleStartOptions(options...)
 	if s.running {
 		return s.stopChan
 	}
@@ -493,4 +495,15 @@ func (s *Scheduler) getCurrentJob() *Job {
 func (s *Scheduler) Lock() *Scheduler {
 	s.getCurrentJob().lock = true
 	return s
+}
+
+func (s *Scheduler) handleStartOptions(options ...interface{}) {
+	for _, option := range options {
+		switch option.(type) {
+		case Logger:
+			// Note: the logger will only be initialized if the Logger
+			// interface is conformed to
+			initLogger(option.(Logger))
+		}
+	}
 }
